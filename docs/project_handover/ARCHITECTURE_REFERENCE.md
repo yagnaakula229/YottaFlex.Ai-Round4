@@ -4,6 +4,7 @@
 
 ## Current implemented architecture
 <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/6979b3b0-7409-48b9-94da-a3a2fa0864d8" />
+<img width="2592" height="3484" alt="mermaid-diagram" src="https://github.com/user-attachments/assets/170c0e85-86b6-4d2c-8667-c876caa57288" />
 
 
 ```mermaid
