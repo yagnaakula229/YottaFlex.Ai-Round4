@@ -1,11 +1,11 @@
 # RiskTrace AI: Project Context
 
 **Status snapshot:** 2026-11-11  
-**Product status:** Scaffold only; requirements below describe intended behavior unless marked implemented.
+**Product status:** Phase 5 relational schema, small deterministic seed baseline, validation, and separate ground-truth JSONL are implemented. Phase 6 backend APIs, deterministic risk detection, analyst workflows, and evaluation are also implemented for the local demo scope. Product UI and frontend/API integration remain unimplemented.
 
 ## Project overview and business problem
 
-RiskTrace AI is a hackathon application for explainable transaction-risk monitoring and analyst case management. The intended system uses synthetic banking activity and transparent rules to prioritize transactions and linked accounts for human review. The handover must not be interpreted as a claim that detection, data generation, or case management already exists.
+RiskTrace AI is a hackathon application for explainable transaction-risk monitoring and analyst case management. The system uses synthetic banking activity and transparent rules to prioritize transactions and linked accounts for human review. Phase 6 implements these backend workflows; no product analyst UI is available yet.
 
 The business objective is to help analysts review a prioritized, evidence-backed queue, connect related activity, record dispositions, and evaluate detection quality without hiding the reason an alert was raised.
 
@@ -21,7 +21,7 @@ The business objective is to help analysts review a prioritized, evidence-backed
 8. Produce measurable evaluation metrics and validate reproducibility/data consistency.
 9. Isolate explicitly invalid exception scenarios instead of silently corrupting valid operational data.
 
-These are requirements supplied in the project brief; none are implemented in the current repository.
+These are project requirements. Phases 5 and 6 implement the relational schema, small deterministic seed data, validation, exception/truth storage, backend detection and workflows, and a separate evaluation service. Full-scale performance and end-to-end behavior remain unverified.
 
 ## Non-functional requirements
 
@@ -46,15 +46,15 @@ These are requirements supplied in the project brief; none are implemented in th
 ### Implemented
 
 - The frontend is an independent Vite/React starter and currently renders its generic counter/tutorial screen.
-- The backend creates `FastAPI(title="RiskTrace AI")`.
-- There are no domain routes, frontend-to-backend calls, database configuration/session, SQLAlchemy models, migrations, or database files.
-- The browser and backend are not integrated.
+- The backend creates `FastAPI(title="RiskTrace AI")` and implements the routes documented in `docs/06_backend_development.md`.
+- The backend has SQLAlchemy 2.x models for all 16 designed entities, SQLite connection/FK enforcement, UTC handling, Alembic migrations through `a61c9f3d10b2`, seed generation, and data-quality validation.
+- The local `backend/risktrace.db` is generated, Git-ignored runtime data. The browser and backend are not integrated.
 
 See [ARCHITECTURE_REFERENCE.md](ARCHITECTURE_REFERENCE.md) for diagrams and route status.
 
 ## Domain entities and intended relationships
 
-The list below is a design vocabulary, not an implemented schema. Resolve cardinalities, nullable fields, uniqueness, effective dating, and delete/update behavior during Phase 4.
+The list below is implemented in the Phase 5 schema. `docs/04_database_design.md` is the authoritative field-level design; `docs/05_database_implementation.md` documents the implemented schema and verification.
 
 ### Core entities
 
@@ -74,7 +74,7 @@ The list below is a design vocabulary, not an implemented schema. Resolve cardin
 - **KYCProfile** — synthetic customer KYC attributes; minimize attributes to what the demo needs.
 - **CustomerAccount** — ownership association (supports joint ownership if selected).
 - **CustomerDevice** — customer/device association, optionally with first/last-seen timestamps.
-- **CaseAlert** — alert/case association; permits multiple alerts per case and, if desired, reassignment/history.
+- **CaseAlert** — alert/case association; permits multiple alerts per case and records link/unlink state; detailed policy is in the Phase 4 design.
 - **ExceptionRecord** — isolated record of a deliberately invalid or validation-failing scenario.
 - **AuditEvent** — append-oriented record of material system and analyst changes.
 
@@ -82,7 +82,7 @@ The list below is a design vocabulary, not an implemented schema. Resolve cardin
 
 - Customer ↔ Account: many-to-many through `CustomerAccount`.
 - Customer ↔ Device: many-to-many through `CustomerDevice`.
-- Customer → KYCProfile: one-to-zero/one or one-to-many versions (Phase 4 decision).
+- Customer → KYCProfile: one-to-zero/many versioned profiles (specified in the Phase 4 design baseline).
 - Account → Transaction: one-to-many.
 - Merchant/Device → Transaction: optional one-to-many references where the activity type supports them.
 - TransferLink → sender/receiver Transaction: references both legs; each transfer must reconcile under the chosen fee/currency model.
@@ -94,15 +94,16 @@ The list below is a design vocabulary, not an implemented schema. Resolve cardin
 
 ## Risk rules and scoring
 
-Initial proposed rules:
+Implemented deterministic Phase 6 rules:
 
 - Transaction velocity spike.
 - High-value transaction.
 - New-device activity.
 - Dormant-account reactivation.
 - Circular transfers.
+- Linked suspicious transactions supported by related alert evidence.
 
-Rule thresholds, lookback windows, score scale, contribution weights, score caps, priority bands, tie-breaking, and version activation policy are **not specified yet**. Phase 4 should avoid embedding assumptions about them in the database design; Phase 5/6 should agree on these before implementation.
+The approved demo scale is 0–10,000 bps; contributions are summed per transaction and capped at 10,000. Priority bands are P1 >= 7,500, P2 >= 5,000, P3 >= 2,500, otherwise P4. Case priority is the highest currently linked alert priority. Six deterministic rule versions are implemented; their contributions are demo policy values, not calibrated risk estimates. Evaluation uses the separate ground-truth service and does not feed labels into detection.
 
 At minimum, an alert should preserve the triggered rule and version, triggering transaction, evidence, score contribution, detection timestamp, and risk priority. Scores should be reproducible from the same input and rule version.
 
@@ -123,8 +124,9 @@ Baseline targets from the project brief:
 - Cover ordinary patterns plus velocity spikes, new devices, circular transfers, dormant-account reactivation, and false positives.
 - Keep truth labels in a separate `ground_truth/` artifact/flow; neither rules nor detector queries may read those labels.
 - Run consistency checks and compare deterministic output across repeated runs.
-- The exact account ID example `ACC--01` is ambiguous. Preserve it as a supplied example, but resolve the intended account ID grammar before generating data. Other supplied examples are `CUS-000001`, `TXN-2026-00000001`, `ALT-2026-000001`, and `CASE-2026-000001`.
-- Transaction posting order, currency/decimal precision, reversals, transaction lifecycle, and account overdraft semantics require explicit Phase 4 decisions.
+- Phase 4 adopts the literal `ACC--` prefix followed by a positive decimal ordinal with minimum width two (`ACC--01`, expanding beyond two digits as needed). Other supplied examples are `CUS-000001`, `TXN-2026-00000001`, `ALT-2026-000001`, and `CASE-2026-000001`.
+- The Phase 5 generator currently validates a small baseline of 50 customers, 70 accounts, 20 merchants, 30 devices, and 500 transactions. The target 5,000/7,000/100,000/1,000 configuration validates but has not been generated or benchmarked.
+- The schema uses integer minor-unit money, UTC-normalized timestamps, ordered posted ledger entries, optional one-to-one compensating reversals, and overdraft validation.
 
 ## Required exception scenarios
 
@@ -136,7 +138,7 @@ The following are deliberately invalid cases, not valid operational records:
 4. Alert has no triggering transaction.
 5. Case disposition precedes its alert.
 
-Represent these in a separate, labeled validation/exception path. Do not silently insert them into valid operational tables. Decide whether exception fixtures are raw input, rejected rows, or `ExceptionRecord` cases; preserve a reason and validation outcome. The orphan-alert and temporal-order cases must not weaken constraints for valid alerts/actions.
+The Phase 5 seed represents all five scenarios as quarantined `ExceptionRecord` payloads; invalid candidates are not inserted into valid operational tables. The orphan-alert and temporal-order cases do not weaken constraints for valid alerts/actions.
 
 ## Business workflow (target)
 
@@ -152,13 +154,13 @@ Represent these in a separate, labeled validation/exception path. Do not silentl
 
 ## Evaluation metrics
 
-No metric definitions or thresholds have yet been approved. Proposed measures to discuss include precision, recall, F1, false-positive rate, alert volume, precision/recall at a review-capacity cutoff, case-linkage quality, and analyst workflow measures (time to disposition, backlog/throughput). Specify ground-truth label semantics, unit of evaluation (transaction/alert/case), threshold selection, and treatment of unreviewed alerts before reporting metrics. Never claim these metrics exist until implemented and tested.
+The implemented evaluation service reports precision, recall, F1, false-positive rate, and top-100 precision at transaction level; ambiguous labels are excluded from binary metrics. Evaluation is separate from operational detection. See `docs/06_backend_development.md` for implemented metric details and limitations.
 
 ## Constraints, assumptions, and unresolved questions
 
 - Hackathon implementation uses SQLite; PostgreSQL is a portability consideration only.
 - Synthetic data only; no real customer data or credentials should be added.
-- The project brief is the current requirements source; there is no separate Phase 1/2 specification or architecture decision record in the repository.
+- The project brief and [Phase 1 analysis](../01_problem_analysis.md) are the requirements baseline; [Phase 2 architecture](../02_system_architecture.md) is a proposal. No architecture decision record exists in the repository.
 - One local developer setup is verified; runtime versions on other machines are not guaranteed.
 - No auth/authorization requirements or analyst identity provider have been selected.
-- Resolve: account ID format, currency and monetary precision, time zone, transaction statuses, overdraft handling, KYC versioning, rule score/priority scale, dispositions, case ownership/closure states, ground-truth schema, and exception storage policy.
+- Phase 4 decisions are incorporated in `docs/04_database_design.md`; Phase 5 and 6 implementation evidence is in `docs/05_database_implementation.md` and `docs/06_backend_development.md`. The next task is Phase 7 — Backend Testing. The 100k workload, PostgreSQL portability, authentication, frontend/API integration, and end-to-end behavior remain to be verified.

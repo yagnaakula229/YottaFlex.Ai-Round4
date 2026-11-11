@@ -1,39 +1,41 @@
 # RiskTrace AI: Known Issues and Pending Work
 
-**Snapshot:** 2026-11-11. Items below are based on inspected repository files, the sole reachable commit (`9fb2c99`), current Git status, and rerun verification; they are not claims about unobserved external discussions.
+**Snapshot:** 2026-11-11 (final completion sprint). Verified against the application, benchmark evidence, tests, and handover documents. No commit or push was made.
+
+The application has 16 ORM entities: Customer, Account, Merchant, Device, Transaction, TransferLink, RiskRule, Alert, Case, AnalystAction, KYCProfile, CustomerAccount, CustomerDevice, CaseAlert, ExceptionRecord, and AuditEvent. Phase 6 added the rule key `linked_suspicious` through migration `a61c9f3d10b2`; it did not add or remove an entity.
 
 ## Known issues and limitations
 
-1. **No application functionality:** backend is an app shell and frontend is a generic template/counter; no transaction monitoring or analyst workflow exists.
-2. **No persistence:** no database file, engine/session, schema, migrations, models, initialization, or seed data.
-3. **No business endpoints/integration:** FastAPI exposes framework routes only; React makes no API requests. `GET /` is 404.
-4. **No tests collected:** `backend/tests/` only has a placeholder; `python -m pytest -q` prints “no tests ran” and exits 5. No frontend test runner/script or API integration tests are present.
-5. **Environment settings are declarative only:** `.env.example` is present, but no `.env` loader or use of `DATABASE_URL`, `RANDOM_SEED`, `API_HOST`, or `API_PORT`.
-6. **Design ambiguities remain:** account ID example `ACC--01`, score ranges/weights/priorities, transaction and balance semantics, case/action vocabularies, metric definitions, exception fixture handling, and auth are not specified.
-7. **TestClient dependency warning:** manual FastAPI `TestClient` smoke check emits a Starlette deprecation warning for HTTPX usage (message recommends `httpx2`). It did not prevent successful responses. Revisit when adding tests; do not silently change test dependencies without compatibility verification.
-8. **Performance unmeasured:** the 100,000-transaction baseline is a requirement only; no generator, index plan, benchmark, or profiling evidence exists.
-9. **Portability unverified:** only the inspected Windows workstation was exercised. The portable Node installation is machine-local, outside the repo.
-10. **Phase-order gap:** the scaffold (Phase 3) is committed, but no Phase 1 problem-analysis or Phase 2 architecture deliverable is evidenced in this repository. Resume with Phase 1, then Phase 2; Phase 3 is already complete and must not be repeated.
-11. **Uncommitted handover documentation:** root `README.md` is modified and `docs/project_handover/` is untracked. These are documentation changes only; application source remains unchanged. They have not been committed or pushed.
-12. **Final handoff remains future work:** this package captures the current state; final operational, demo, evaluation, and release documentation depends on implementation.
+1. **Frontend behavior-test gap:** Overview, Transactions, Alerts, and Cases are implemented and connected to the FastAPI operational API. The Vite proxy and live data reads were verified, and the production build passes. No automated frontend behavior/E2E test suite is configured; the live read-only integration check did not perform a state-mutating analyst action against the development database.
+2. **Environment loading:** `.env.example` is provided, but the application does not automatically load `.env`. Configure environment variables in the backend process.
+3. **Evaluation scale remains unverified beyond a sample:** An isolated temporary benchmark generated 5,000 customers, 7,000 accounts, 1,000 merchants, 1,000 devices, and 100,000 transactions. Generation took 60.222 seconds. Risk evaluation measured only the first 1,000 transactions: 33.874 seconds, 29.52 transactions/second, and 1,142 alerts created. Do not extrapolate this rate or claim that all 100,000 transactions were evaluated.
+4. **Database portability:** SQLite is verified; PostgreSQL compatibility and dialect-specific trigger equivalents are not.
+5. **Authentication and deployment:** analyst actions use synthetic identity `analyst-demo-001` without authentication. Do not expose the API externally; authentication, authorization, transport security, and deployment controls are pending.
+6. **Risk calibration:** six deterministic rules, contributions, and thresholds are demo policy. They are explainable and reproducible but are not calibrated or evidence of real-world detection quality.
+7. **Evaluation scope:** metrics use the checked-in synthetic transaction labels. They are not representative of a production population, and no real-world validation or train/validation evaluation has occurred.
+8. **Testing warning:** Latest full `python -m pytest -q` passes 65 tests, but emits one Starlette deprecation warning recommending `httpx2` for `TestClient`. No dependency migration has been performed. Oxlint exits successfully but reports four `react(set-state-in-effect)` warnings in the four page components; no refactor was made.
+9. **Case grouping concurrency:** singleton attachment is sequentially idempotent and uses the existing unique `(case_id, alert_id)` constraint. Concurrent grouping requests are not fully serialized, and the schema does not enforce one active-case association per alert.
+10. **Reset caution:** seed generation targets an empty database; do not rerun it against the populated development database. The explicit local reset path protects analyst/audit history and is not a production reset strategy.
+11. **Benchmark measurement limits:** Windows process working set was sampled during the benchmark; the observed peak was 697,450,496 bytes (~665 MiB), not an isolated application allocation measurement. Final SQLite database size was 58,335,232 bytes; temporary truth JSONL size was 35,181,667 bytes. The benchmark used a temporary database and truth file; development data was preserved.
+12. **Worktree:** existing application and documentation changes are preserved and remain uncommitted. No commit or push was made.
 
-## Immediate next task (exact)
+## Verified current database state
 
-**Resume at Phase 1 — Problem Analysis.** The supplied 12-phase plan orders Phase 1 and Phase 2 before Phase 3, but repository history contains only the Phase 3 setup commit; no persisted Phase 1 or 2 deliverables were found. Create a Phase 1 artifact (for example `docs/01_problem_analysis.md`) that captures the business problem, users and scenarios, scope/non-scope, requirements and testable acceptance criteria, constraints, assumptions, risks, and open questions from the project brief. Clearly label unconfirmed requirements and do not invent stakeholder decisions. Do not redo the completed Phase 3 setup.
+- Alembic revision: `a61c9f3d10b2 (head)`.
+- Records preserved through the additive upgrade: 500 transactions, 6 rules, 10 alerts, 1 case, 1 analyst action, and 2 audit events.
+- The new active rule is `RUL-linked_suspicious-V01`.
+- `PRAGMA foreign_key_check` returned no violations; both risk-rule protection triggers are present.
+- Phase 6 tests use isolated temporary SQLite databases and do not reset the development database.
+- Latest backend suite: 65 passed (one Starlette/TestClient deprecation warning). Alembic check reported no new upgrade operations; compileall, pip check, and diff check passed in the consolidated backend verification. The frontend production build passed. Latest local DB checks are documented in the earlier handover evidence; the temporary benchmark DB had 100,000 transactions and zero foreign-key violations.
 
-After Phase 1, complete Phase 2 architecture. Then continue to **Phase 4 — Database Design and Data Dictionary**: define all requested core/supporting entities, fields/types, PK/FK relationships/cardinalities, uniqueness/check constraints, indexes, lifecycle/status/disposition vocabularies, monetary precision/currency and time semantics, balance/overdraft/reversal behavior, alert/rule version/evidence fields, audit history, exception isolation, ground-truth separation, and SQLite/PostgreSQL portability. Include an ER diagram and explicitly resolve or record the `ACC--01` ID-format ambiguity. Do not create models or seed records until the design is sufficiently agreed.
+## Recommended next work (not part of the completed sprint)
 
-## Subsequent work (ordered by supplied phases)
+1. Add automated frontend behavior tests for loading/error/empty states, filters, and case review/disposition. Keep state-mutating tests isolated from `backend/risktrace.db`.
+2. Profile/optimize risk evaluation before attempting a complete 100,000-transaction evaluation. Preserve the measured generator and evaluation timings as separate measures.
+3. Resolve the Starlette/TestClient deprecation only after checking compatible dependency versions and behavior; do not make a dependency change solely to silence the warning.
+4. Add authentication/authorization and deployment controls before any non-local use.
+5. Verify PostgreSQL compatibility only if PostgreSQL becomes a target.
 
-1. Phase 2: design the architecture after Phase 1.
-2. Phase 4: define and review the data model/dictionary after Phases 1–2 (Phase 3 setup is already complete).
-3. Phase 5: implement the approved relational design, initialization, deterministic synthetic data, validation, and separately held ground truth.
-4. Phase 6: implement versioned explainable risk rules, API, alert prioritization, case grouping, analyst actions, and audit trail.
-5. Phase 7: add/run backend unit, invariant, and API integration tests, including all five isolated invalid scenarios and reproducibility.
-6. Phase 8: replace the generic template with analyst workflows and implement the agreed API integration.
-7. Phase 9: add/run frontend behavior/accessibility tests.
-8. Phase 10: integrate frontend, backend, and database; validate configuration, CORS, and data flow.
-9. Phase 11: test seeded-data-to-analyst-disposition user journeys and evaluation/reporting.
-10. Phase 12: update phase documentation, final setup/demo guide, evidence, known issues, and handoff.
+The current demo implementation is complete for its documented local scope; the items above are follow-up hardening, not evidence that the benchmark, frontend, or backend implementation failed.
 
-Do not treat sequence alone as implementation proof; record tests, results and artifacts when each task actually happens.
+Do not treat sequence alone as implementation proof. Record files, commands, results, and limitations after each phase.

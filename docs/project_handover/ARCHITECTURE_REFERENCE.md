@@ -1,6 +1,6 @@
 # RiskTrace AI: Architecture Reference
 
-**Snapshot:** 2026-11-11. Diagrams distinguish implemented state from proposed design.
+**Snapshot:** 2026-11-11. This reference distinguishes implemented Phase 5/6 behavior from future frontend and deployment work.
 
 ## Current implemented architecture
 
@@ -8,14 +8,20 @@
 flowchart LR
     Browser["Browser"]
     React["React/Vite starter<br/>frontend/src"]
-    FastAPI["FastAPI application shell<br/>backend/app/main.py"]
+    FastAPI["FastAPI domain API<br/>backend/app/main.py"]
     FrameworkDocs["FastAPI /docs and /openapi.json"]
+    Seed["Seed/data-quality CLI<br/>backend/app/services"]
+    ORM["SQLAlchemy 2.x models/session"]
+    DB[("SQLite risktrace.db<br/>local, Git-ignored")]
+    Truth["Separate ground-truth JSONL"]
     Browser --> React
-    Browser -. "independent process; no client/API integration" .-> FastAPI
+    Browser -. "frontend is not wired to API" .-> FastAPI
     FastAPI --> FrameworkDocs
+    Seed --> ORM --> DB
+    Seed --> Truth
 ```
 
-The frontend is a generic Vite/React starter and does not call the backend. The backend has no custom routes and no storage. There is no SQLite file, ORM model, schema, migration, or database connection in the repository.
+The frontend remains a generic Vite/React starter and does not call the backend. Phase 6 adds FastAPI domain routes and database-backed services. Phase 5 implements the SQLAlchemy persistence layer, Alembic migration, small deterministic seed/data-quality CLI, and separate ground-truth output; the local SQLite database is Git-ignored.
 
 ## Target three-tier architecture (proposed)
 
@@ -31,7 +37,7 @@ flowchart LR
     Metrics["Offline evaluation only"]
 
     Analyst --> UI
-    UI -->|"HTTP/JSON; contract TBD"| API
+    UI -. "HTTP/JSON contract documented; integration pending" .-> API
     API --> Services
     Services --> ORM
     ORM --> DB
@@ -40,11 +46,11 @@ flowchart LR
     Truth --> Metrics
 ```
 
-The evaluation path is separate from detector input; domain services must not read ground-truth labels. Framework choices and target modules are specified by the project brief; the detailed interface, schema, API path conventions, auth, and deployment design remain unapproved.
+The evaluation path is separate from detector input; operational risk services must not read ground-truth labels. Phases 5 and 6 implement the schema, API contracts, detector, and backend workflows. Authentication, deployment, and frontend integration remain open.
 
-## Proposed conceptual ER diagram (not implemented)
+## Phase 4 ER design and Phase 5 schema implementation
 
-This is a candidate relationship outline based on the requested entity list. It is not a Phase 4 schema or an approved cardinality contract.
+This diagram summarizes the implemented cardinalities in [the Phase 4 data dictionary](../04_database_design.md) and [Phase 5 implementation](../05_database_implementation.md); the detailed fields, optionality, constraints, and deletion policy there are authoritative.
 
 ```mermaid
 erDiagram
@@ -56,24 +62,57 @@ erDiagram
     ACCOUNT ||--o{ TRANSACTION : records
     MERCHANT o|--o{ TRANSACTION : counterparty
     DEVICE o|--o{ TRANSACTION : observed_on
+    ACCOUNT ||--o{ TRANSFER_LINK : source_account
+    ACCOUNT ||--o{ TRANSFER_LINK : destination_account
     TRANSACTION ||--o| TRANSFER_LINK : sender_leg
     TRANSACTION ||--o| TRANSFER_LINK : receiver_leg
+    TRANSACTION o|--o| TRANSACTION : reversal_of
     RISK_RULE ||--o{ ALERT : evaluates
     TRANSACTION ||--o{ ALERT : triggers
     CASE ||--o{ CASE_ALERT : groups
     ALERT ||--o{ CASE_ALERT : belongs_to
     CASE ||--o{ ANALYST_ACTION : records
     ALERT o|--o{ ANALYST_ACTION : action_context
-    EXCEPTION_RECORD o|--o{ AUDIT_EVENT : may_audit
+    EXCEPTION_RECORD {
+        string exception_id PK
+        string scenario_code
+        string subject_type
+        string subject_id "informational; no FK"
+    }
+    AUDIT_EVENT {
+        string audit_event_id PK
+        string entity_type
+        string entity_id "informational; no FK"
+        string event_type
+    }
 ```
 
-The ER notation is conceptual; resolve whether KYC is versioned, whether transfer legs can belong to multiple links, alert reassignment semantics, and exact audit/exception references before creating tables.
+The ER diagram includes all 16 entities. `AuditEvent.entity_type/entity_id` and `ExceptionRecord.subject_type/subject_id` are independent informational polymorphic references with no FK; the entities therefore have no relationship edge in the diagram. Transaction reversal is optional one-to-one.
 
 ## API endpoints
 
 ### Implemented
 
-There are **no custom application endpoints**. FastAPI's current framework routes are:
+Implemented backend routes include:
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/health` | Basic service health |
+| GET | `/api/transactions` | Paginated/filterable transaction listing |
+| GET | `/api/transactions/{transaction_id}` | Transaction detail |
+| GET | `/api/accounts/{account_id}/transactions` | Account transaction listing |
+| GET | `/api/accounts/{account_id}/links` | Evidence-backed account relationships |
+| GET | `/api/alerts` | Filterable alert listing |
+| GET | `/api/alerts/{alert_id}` | Alert detail |
+| POST | `/api/risk/evaluate` | Evaluate transactions and persist eligible alerts |
+| GET | `/api/cases` | Case listing |
+| GET | `/api/cases/{case_id}` | Case detail |
+| POST | `/api/cases/group` | Group related alerts into cases |
+| POST | `/api/cases/{case_id}/actions` | Record analyst actions |
+| GET | `/api/dashboard/summary` | Operational dashboard summary |
+| GET | `/api/analytics/evaluation` | Separate ground-truth evaluation metrics |
+
+FastAPI's documentation/framework routes are also available:
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -82,45 +121,30 @@ There are **no custom application endpoints**. FastAPI's current framework route
 | GET/HEAD | `/openapi.json` | Framework-generated schema |
 | GET/HEAD | `/docs/oauth2-redirect` | Swagger UI support route |
 
-`GET /` currently returns 404. This is expected for the empty application shell and is not a business endpoint.
+`GET /` is not implemented. Route schemas, pagination, request/response behavior, rules, and limitations are specified in [Phase 6 backend development](../06_backend_development.md). The analyst identity is synthetic and unauthenticated; do not expose this demo service externally.
 
-### Candidate future contract (not implemented or approved)
-
-| Candidate route | Intended use |
-|---|---|
-| `GET /api/v1/health` | Application readiness/health |
-| `GET /api/v1/alerts` | Filter and prioritize alert queue |
-| `GET /api/v1/cases` and `GET /api/v1/cases/{case_id}` | List/review cases and evidence |
-| `POST /api/v1/cases/{case_id}/actions` | Record an analyst action/disposition |
-| `GET /api/v1/metrics` | Return explicitly defined evaluation/operational metrics |
-
-Agree path, payload, pagination, auth, errors, and versioning through API contracts before implementing these routes.
-
-## Database relationship and integrity principles (target)
+## Database relationship and integrity principles (Phase 5 implemented)
 
 - Use explicit PK/FK constraints and uniqueness/indexes from the Phase 4 data dictionary.
 - Model many-to-many customer/account and customer/device relationships using association tables.
 - Associate each operational alert with a valid triggering transaction and an immutable rule-version reference/snapshot.
 - Associate cases and alerts through `CaseAlert`; preserve action chronology and audit history.
-- Treat transfers as two-leg relations with documented amount/currency/fee reconciliation semantics.
-- Keep intentionally invalid fixtures outside valid operational records. Exception records should identify the rejected source/scenario and validation reason.
-- Define monetary precision/currency and posting order before balance reconciliation.
-- PostgreSQL compatibility is a future goal; validate portability explicitly rather than assuming it.
+- Transfers use same-currency equal debit/credit legs, paired with composite account/transaction FKs.
+- Keep intentionally invalid fixtures outside valid operational records. The Phase 5 seed stores all five required scenarios as quarantined ExceptionRecord payloads.
+- The implementation uses integer minor-unit USD amounts, UTC-aware application timestamps, deterministic `(transaction_at, transaction_id)` ledger ordering, and effective-dated ownership validation.
+- SQLite migration/ORM guards protect FK integrity, immutable IDs/rule versions, and append-only action/audit history. PostgreSQL compatibility is a future goal; validate portability explicitly rather than assuming it.
 
-No one of these database behaviors is implemented yet.
+The persistence schema, seed/data-quality workflows, backend rule execution, APIs, and evaluation service are implemented for the demo scope. Frontend integration is not.
 
 ## Target business/data flow
 
-1. Seed master entities (customers, merchants, devices, accounts, KYC and associations).
-2. Create transactions and transfer links using valid foreign keys.
-3. Reconcile balances and validate transaction, account, and transfer invariants.
-4. Keep ground-truth labels in a separate store/file/path and out of detector reads.
-5. Evaluate deterministic, versioned rules on allowed detection inputs.
-6. Save alert evidence, score contribution, rule version, trigger, time, and priority.
-7. Group linked alerts into cases.
-8. Record timestamped analyst actions and append audit events.
-9. Compute metrics against ground truth in a separate evaluation path.
-10. Export operational data and truth/metrics separately, with validation.
+1. **Implemented for the small baseline:** seed master entities, associations, KYC, transactions, and transfer links using deterministic IDs.
+2. **Implemented:** reconcile balances and validate FK, ownership, ledger, transfer, alert/case priority, and chronology invariants.
+3. **Implemented:** write separate transaction-level ground-truth JSONL and quarantined ExceptionRecord fixtures.
+4. **Implemented in Phase 6:** evaluate deterministic, versioned rules using permitted operational inputs only.
+5. **Implemented in Phase 6:** persist detector-generated alert evidence, rule version, trigger, timestamp, score contribution, and priority.
+6. **Implemented in Phase 6:** group related alerts into cases and record analyst actions/audit events through business operations.
+7. **Implemented in Phase 6:** compute evaluation metrics against separate ground truth; additional metric validation/export remains future work.
 
 ## Target risk evaluation flow
 
@@ -143,8 +167,8 @@ flowchart TD
     Truth --> Metrics
 ```
 
-The score range, aggregation, thresholds, priority bands, review capacity, and metric definitions are open decisions. Never use ground-truth labels to create detector features, choose a triggering rule, or generate an alert.
+The approved demo score aggregation is sum-and-cap at 10,000 bps; priority is P1 >= 7,500, P2 >= 5,000, P3 >= 2,500, otherwise P4. Case priority is the highest linked-alert priority. These are policy defaults, not validated calibration. The Phase 6 detector and evaluation service are implemented; their demo metrics are not a real-world performance claim. Never use ground-truth labels to create detector features, choose a triggering rule, or generate an alert.
 
 ## Exception handling (target)
 
-The required invalid scenarios (closed account, unauthorized negative balance, unreconciled transfer, orphan alert, and disposition before alert) should be labeled and routed to a validation/exception path. Capture the scenario, offending input/reference, failure reason, and outcome; do not weaken operational foreign keys or chronology constraints to make invalid fixtures pass. Decide during schema/generator design whether invalid fixtures are rejected inputs, isolated `ExceptionRecord`s, or a separately flagged dataset.
+The Phase 5 seed creates quarantined ExceptionRecord payloads for all required invalid scenarios (closed account, unauthorized negative balance, unreconciled transfer, orphan alert, and disposition before alert). Do not weaken operational foreign keys or chronology constraints to make invalid fixtures pass. Phase 6 adds API validation; Phase 7 remains responsible for deeper edge-case and performance testing.

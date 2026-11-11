@@ -1,140 +1,568 @@
-# RiskTrace AI: Phase-wise Progress
+# RiskTrace AI — Phase-wise Project Progress
 
 **Evidence snapshot:** 2026-11-11  
-**Git evidence:** one reachable commit, `9fb2c99` (`Set up RiskTrace AI project`), on `main` and `origin/main` at the initial inspection. That commit adds the Phase 3 scaffold. Current work adds Phase 1/2 documents and updates the handover and README; these documentation-only changes are uncommitted. Application source is unchanged.
+**Project:** RiskTrace AI — Explainable Transaction Risk Monitoring & Analyst Case Management System
 
-Status definitions: **Completed** means implemented and verified with evidence; **In Progress** means some scoped work exists but exit criteria remain; **Not Started** means no implementation evidence in the repository; **Blocked** means a documented blocker prevents progress.
+## Git and implementation evidence
 
-The phase names/order follow the supplied 12-phase execution plan. Repository history contains only the setup commit; Phases 1 and 2 were initially undocumented. Their documentation artifacts were created in the current work from the supplied hackathon statement. Phases 4–11 still have no implementation evidence. Phase 3 setup exists and must not be repeated. Phase 1 analysis is complete as a documented requirements baseline; Phase 2 architecture is documented as a proposed design and still requires review/approval of the identified open decisions before implementation.
+- Commit `9fb2c99` (`Set up RiskTrace AI project`) contains the Phase 3 scaffold.
+- Commit `68994b0` (`project setup complete`) contains Phase 1/2 documentation and the original handover package.
+- Phase 4–10 implementation and documentation changes remain uncommitted.
+- No commit or push was performed during the final completion sprint.
+
+### Status definitions
+
+- **Completed:** Implemented and verified with evidence.
+- **In Progress:** Some scoped work exists, but exit criteria remain.
+- **Not Started:** No implementation evidence exists.
+- **Blocked:** A documented blocker prevents progress.
+
+**Overall status:** Phases 1–8 are complete for the documented hackathon demo scope. Phase 9 covers performance benchmarking, and Phase 10 covers documentation and final handoff. The performance benchmark generated 100,000 transactions, but risk evaluation covered only the first 1,000 transactions.
+
+---
 
 ## Phase 1 — Problem Analysis
 
-- **Status:** Completed (problem-analysis documentation baseline; no application implementation).
-- **Files created:** `docs/01_problem_analysis.md`.
-- **Files modified:** None in application source.
-- **Implementation completed:** Recorded the business problem, inferred personas (explicitly marked for confirmation), scope, requirements, testable acceptance criteria, data constraints, exception scenarios, non-functional requirements, assumptions, open questions, and phase plan from the supplied project statement.
-- **Tests executed/results:** No application tests apply to this documentation-only phase. Completeness was checked against the supplied problem statement and the document was manually reviewed; no stakeholder acceptance was claimed.
-- **Pending work:** Confirm inferred personas, scope assumptions, and open business questions with project stakeholders when available.
-- **Known issues:** Requirement details such as dispositions, analyst roles, and metric definitions remain open.
-- **Next action:** Use this analysis as the basis for Phase 2/4 decisions; update it if requirements change.
+**Status:** Completed.
+
+**Files created:**
+
+- `docs/01_problem_analysis.md`
+
+**Implementation completed:**
+
+Documented:
+
+- Business problem.
+- Inferred personas, explicitly marked for confirmation.
+- Project scope.
+- Functional and non-functional requirements.
+- Testable acceptance criteria.
+- Data constraints.
+- Exception scenarios.
+- Assumptions and open questions.
+- Phase implementation plan.
+
+**Tests and verification:**
+
+No application tests apply to this documentation-only phase. Completeness was checked against the supplied problem statement. No stakeholder acceptance was claimed.
+
+**Pending work:**
+
+- Confirm inferred personas and scope assumptions with stakeholders.
+- Resolve open business questions when available.
+
+**Known issues:**
+
+- Dispositions, analyst roles, and metric definitions originally remained open for confirmation.
+
+---
 
 ## Phase 2 — System Architecture
 
-- **Status:** Completed as a proposed architecture document; implementation and approval of open design choices remain pending.
-- **Files created:** `docs/02_system_architecture.md`.
-- **Files modified:** None in application source.
-- **Implementation completed:** Documented the three-tier architecture, conceptual ER relationships, proposed API contracts, data flow, risk-evaluation flow, exception workflow, and current-versus-target status. Proposed elements are explicitly distinguished from implemented behavior.
-- **Tests executed/results:** No application tests apply to this documentation-only phase. Completeness was checked against the supplied architecture and domain requirements; no schema or API behavior was claimed as implemented.
-- **Pending work:** Review/approve route semantics, entity/cardinality decisions, authentication, score/rule policy, exception storage, and data dictionary before corresponding implementation.
-- **Known issues:** The architecture is a requirements-grounded proposal, not a stakeholder-approved or deployed design; Phase 4 must finalize the schema.
-- **Next action:** Proceed to Phase 4 Database Design and Data Dictionary using this architecture as input, after confirming any open choices that affect the schema.
+**Status:** Completed as a proposed architecture document.
+
+**Files created:**
+
+- `docs/02_system_architecture.md`
+
+**Implementation completed:**
+
+Documented:
+
+- Three-tier architecture.
+- Conceptual ER relationships.
+- Proposed API contracts.
+- Data flow.
+- Risk evaluation flow.
+- Exception workflow.
+- Current-versus-target implementation status.
+
+Proposed elements are distinguished from implemented behavior.
+
+**Tests and verification:**
+
+The architecture document was reviewed against the supplied requirements. No schema or API behavior was claimed as implemented at this stage.
+
+**Pending work:**
+
+- Authentication.
+- Deployment architecture.
+- PostgreSQL portability.
+- Full-scale performance validation.
+
+Database decisions were approved in Phase 4, and Phase 6 implemented the documented API and risk behavior for the local demo scope.
+
+**Known issues:**
+
+- This remains a design reference rather than a production deployment architecture.
+- Actual Phase 6 API endpoints are documented in `docs/06_backend_development.md`.
+
+---
 
 ## Phase 3 — Project Setup
 
-- **Status:** Completed (setup scope only).
-- **Files created in commit `9fb2c99`:** `.env.example`, `.gitignore`, `README.md`, `docs/03_project_setup.md`; `backend/requirements.txt`, `backend/app/main.py`, placeholders under `backend/app/{api,database,models,schemas,services}/` and `backend/tests/`; frontend Vite/React files (`frontend/package.json`, lockfile, config, HTML, starter JSX/CSS/assets, frontend README/config); placeholders under `frontend/src/{components,data,pages,services}/`, `exports/`, and `ground_truth/`.
-- **Files modified after setup:** Root `README.md` was updated during the handover task. Handover files under `docs/project_handover/` were created and are subsequently being updated. No application source files have been modified.
-- **Implementation completed:** Independent React/Vite JavaScript and FastAPI project structures; local venv and npm dependencies; minimal FastAPI app.
-- **Tests executed/results:** `python -m pip check` passed; six backend imports/versions verified (FastAPI 0.162.4, Uvicorn 0.54.0, SQLAlchemy 2.1.8, Pydantic 2.14.3, pytest 8.4.2, HTTPX 0.28.1). FastAPI `/docs` and `/openapi.json` returned 200. `npm run lint` passed; `npm run build` passed. `python -m pytest -q` found no tests and exited 5 (pytest's no-tests-collected status, not a passing suite). `GET /` returned 404, as no root endpoint exists.
-- **Pending work:** No Phase 3 scope remains; the generic starter screen is intentionally not a product frontend.
-- **Known issues:** `TestClient` emitted a Starlette deprecation warning about using HTTPX and recommending `httpx2`; no API tests are currently written. Sample `.env` values are not loaded by code.
-- **Next action:** Setup is complete. Continue with Phase 4; do not recreate the environments or scaffold.
+**Status:** Completed.
+
+**Files created:**
+
+- `.env.example`
+- `.gitignore`
+- `README.md`
+- `docs/03_project_setup.md`
+- `backend/requirements.txt`
+- `backend/app/main.py`
+- Backend application placeholders.
+- Backend test placeholders.
+- Frontend React/Vite starter files.
+- Frontend package configuration and lockfile.
+- Frontend README and configuration.
+- `exports/` and `ground_truth/` placeholders.
+
+**Implementation completed:**
+
+- Independent React/Vite JavaScript frontend.
+- FastAPI backend.
+- Local Python virtual environment.
+- npm dependencies.
+- Minimal FastAPI application.
+
+**Tests and verification:**
+
+- `pip check` passed.
+- FastAPI imports and installed versions verified.
+- `/docs` and `/openapi.json` returned HTTP 200.
+- `npm run lint` passed at the original setup stage.
+- `npm run build` passed.
+- `pytest` initially found no tests, which was expected before later implementation phases.
+
+**Known issues:**
+
+- Sample `.env` values are not automatically loaded by the application.
+- Starlette emits an existing TestClient deprecation warning concerning HTTPX compatibility.
+
+**Outcome:** No Phase 3 work remains. Do not recreate the project scaffold.
+
+---
 
 ## Phase 4 — Database Design and Data Dictionary
 
-- **Status:** Not Started.
-- **Files created:** None for Phase 4; handover context includes requirements but is not a data dictionary.
-- **Files modified:** None.
-- **Implementation completed:** No schema, ER artifact, field definitions, or migration strategy.
-- **Tests executed/results:** None.
-- **Pending work:** Define entities, fields/types, relationships, constraints/indexes, status/disposition vocabularies, exception strategy, monetary/time semantics, and SQLite/PostgreSQL compatibility.
-- **Known issues:** Account ID example `ACC--01`, balance/ledger model, scoring fields, and several cardinalities need clarification.
-- **Next action:** Create a Phase 4 data dictionary and reviewed ER/schema design before implementing models.
+**Status:** Completed.
+
+**Files created:**
+
+- `docs/04_database_design.md`
+
+**Implementation completed:**
+
+Documented all 16 entities, including:
+
+- Complete data dictionary.
+- Relationships.
+- Keys and constraints.
+- Entity lifecycles.
+- Monetary and balance integrity.
+- Exception handling.
+- Ground-truth separation.
+- Indexes.
+- Database portability trade-offs.
+
+The Mermaid ER diagram includes all 16 entities.
+
+**Review outcome:**
+
+All nine user-approved database defaults were incorporated into the design.
+
+**Tests and verification:**
+
+The design was manually compared against the 16 ORM entities and their relationship constraints during Phase 5.
+
+**Pending work:** None for the approved Phase 4 design.
+
+**Known issues:**
+
+- Production authentication and PostgreSQL implementation remain outside the current demo scope.
+
+---
 
 ## Phase 5 — Database Implementation and Seed Data
 
-- **Status:** Not Started.
-- **Files created:** None; `backend/app/models/` and `backend/app/database/` contain placeholders only.
-- **Files modified:** None.
-- **Implementation completed:** No database engine, tables, migrations, seed generator, or fixtures.
-- **Tests executed/results:** None.
-- **Pending work:** Implement only after Phase 4 design approval; include deterministic generator, constraints, validation, and separate ground truth.
-- **Known issues:** The requirements specify large baseline data and five invalid scenarios that need a safe exception/quarantine design.
-- **Next action:** Wait for Phase 4 schema/data dictionary.
+**Status:** Completed for the demo baseline.
+
+**Files created:**
+
+- `backend/alembic.ini`
+- `backend/app/database/init_db.py`
+- `backend/app/database/session.py`
+- `backend/app/database/types.py`
+- `backend/app/models/__init__.py`
+- `backend/app/models/entities.py`
+- `backend/app/services/data_quality.py`
+- `backend/app/services/seed_data.py`
+- `backend/migrations/env.py`
+- `backend/migrations/versions/0055723a91d0_initial_schema.py`
+- `backend/tests/test_database_phase5.py`
+- `docs/05_database_implementation.md`
+- `ground_truth/generated/truth_2026.jsonl`
+
+**Implemented entities (16):**
+
+1. Customer
+2. Account
+3. Merchant
+4. Device
+5. Transaction
+6. TransferLink
+7. RiskRule
+8. Alert
+9. Case
+10. AnalystAction
+11. KYCProfile
+12. CustomerAccount
+13. CustomerDevice
+14. CaseAlert
+15. ExceptionRecord
+16. AuditEvent
+
+**Implementation completed:**
+
+- All 16 SQLAlchemy ORM entities.
+- SQLite foreign-key enforcement.
+- UTC timestamp handling.
+- Database constraints and indexes.
+- Alembic initialization.
+- Effective-dated ownership.
+- Optional one-to-one reversal.
+- Transfer composite foreign keys.
+- Append-only analyst and audit records.
+- Immutable identifiers and rule versions.
+- Deterministic synthetic data generator.
+- Five quarantined exception scenarios.
+- Separate transaction-level ground-truth JSONL.
+- Dataset quality validation.
+
+The 100,000-transaction configuration was generated and validated in isolated temporary storage. The development database and checked-in ground-truth file were preserved.
+
+**Benchmark evidence:**
+
+- Customers: 5,000
+- Accounts: 7,000
+- Merchants: 1,000
+- Devices: 1,000
+- Transactions: 100,000
+- Generation time: 60.222 seconds.
+- Temporary truth file: 35,181,667 bytes.
+
+**Baseline dataset verification:**
+
+- 50 customers.
+- 70 accounts.
+- 20 merchants.
+- 30 devices.
+- 500 transactions.
+- 25 reconciled transfers.
+- 5 rules.
+- 10 representative alerts.
+- 1 case.
+- 10 case-alert links.
+- 1 analyst action.
+- 2 audit events.
+- 5 quarantined exceptions.
+- 500 ground-truth records.
+
+**Tests and verification:**
+
+- Initial Alembic migration succeeded.
+- Initial database revision: `0055723a91d0`.
+- Phase 5 test suite: 8 passed.
+- `pip check`: passed.
+- Ground-truth SHA-256:
+
+`2480cc93e270ab7a59449877144d743d4074b4d673f2f026ca60bda33cb92ba5`
+
+**Known issues:**
+
+- Seed alerts are representative records, not detector-generated alerts.
+- `.env` is not automatically loaded.
+- Generated SQLite database is Git-ignored.
+
+---
 
 ## Phase 6 — Backend Development
 
-- **Status:** Not Started.
-- **Files created:** `backend/app/main.py` is a FastAPI application shell only.
-- **Files modified:** None for domain functionality.
-- **Implementation completed:** No business API, risk engine, case workflow, or persistence service.
-- **Tests executed/results:** Framework smoke checks passed; no business/API tests exist.
-- **Pending work:** Implement API, schemas, services, versioned explainable rules, case workflow, audit behavior, and error handling from approved contracts.
-- **Known issues:** Endpoints, scoring policy, validation contracts, and auth are not specified.
-- **Next action:** Design work in Phases 4/5 must precede implementation.
+**Status:** Completed for the implemented and tested local demo scope. This is not a production-readiness claim.
 
-## Phase 7 — Backend Testing
+**Files created:**
 
-- **Status:** Not Started.
-- **Files created:** No test files; `backend/tests/` contains only `.gitkeep`.
-- **Files modified:** None.
-- **Implementation completed:** No automated backend test suite, API integration tests, or data invariants tests.
-- **Tests executed/results:** `python -m pytest -q` → “no tests ran,” exit code 5. This is not a passing test result.
-- **Pending work:** Add unit, data consistency, API integration, exception-case, reproducibility, and evaluation tests as their underlying features are implemented.
-- **Known issues:** FastAPI `TestClient` produced a dependency deprecation warning during a manual smoke check.
-- **Next action:** Build tests alongside phases 5 and 6; make a non-empty pytest suite a phase exit criterion.
+- API routers:
+  - `backend/app/api/transactions.py`
+  - `backend/app/api/alerts.py`
+  - `backend/app/api/risk.py`
+  - `backend/app/api/cases.py`
+  - `backend/app/api/analytics.py`
+- Core configuration and error handling.
+- Pydantic schemas.
+- Transaction service.
+- Risk evaluation service.
+- Account-link analysis service.
+- Case management service.
+- Dashboard service.
+- Ground-truth evaluation service.
+- Additive migration:
+  `backend/migrations/versions/a61c9f3d10b2_add_linked_suspicious_rule.py`
+- `backend/tests/test_backend_phase6.py`
+- `docs/06_backend_development.md`
 
-## Phase 8 — Frontend Development
+**Implementation completed:**
 
-- **Status:** Not Started.
-- **Files created:** Vite template files under `frontend/src/`.
-- **Files modified:** No product-specific UI files.
-- **Implementation completed:** Generic template with counter and framework links only; no analyst dashboard, alerts/cases, services, or backend integration.
-- **Tests executed/results:** `npm run lint` and `npm run build` passed.
-- **Pending work:** Implement product screens and interaction flows after API contracts are established.
-- **Known issues:** Template UI is not a RiskTrace product screen.
-- **Next action:** Defer product frontend work until API/data contracts are stable.
+- Transaction listing and retrieval.
+- Alert creation and retrieval.
+- Account-link analysis.
+- Case grouping and analyst actions.
+- Risk evaluation.
+- Dashboard and analytics.
+- Ground-truth evaluation endpoints.
+- Six deterministic risk rules.
+- Rule-level evidence and explanations.
+- Basis-point scoring and priority classification.
+- Alert idempotency.
+- Supported case grouping and transitions.
+- Append-only analyst actions.
+- Audit history.
+- Separate ground-truth evaluation.
 
-## Phase 9 — Frontend Testing
+Singleton eligible alerts can attach to related active cases using account-link analysis, with deterministic oldest-case selection, priority recalculation, and an audit event.
 
-- **Status:** Not Started.
-- **Files created:** No frontend test files or test runner configuration.
-- **Files modified:** None.
-- **Implementation completed:** No component, interaction, accessibility, or browser tests.
-- **Tests executed/results:** Build and lint passed; neither is a frontend behavior test.
-- **Pending work:** Select/establish suitable test coverage when product components exist; add tests for loading, errors, filters, and analyst actions.
-- **Known issues:** No frontend behavior test script is defined in `frontend/package.json`.
-- **Next action:** Add tests with the first real UI features.
+**Tests and verification:**
 
-## Phase 10 — Frontend-Backend-Database Integration
+The latest complete suite after Phase 7 contains 65 passing tests.
 
-- **Status:** Not Started.
-- **Files created:** None.
-- **Files modified:** None.
-- **Implementation completed:** The frontend, backend, and database are not connected; there is no database.
-- **Tests executed/results:** None.
-- **Pending work:** Integrate only after database, API, and frontend work exists.
-- **Known issues:** No API contract, CORS policy, configuration loading, or database lifecycle implementation.
-- **Next action:** Agree and implement the contracts and runtime configuration after Phases 4–9 work.
+- Alembic check: passed.
+- Python compilation: passed.
+- `pip check`: passed.
+- Git diff check: passed.
+- Local database migration revision: `a61c9f3d10b2`.
+- Foreign-key check: zero violations.
 
-## Phase 11 — End-to-End Testing
+**Known issues:**
 
-- **Status:** Not Started.
-- **Files created:** None.
-- **Files modified:** None.
-- **Implementation completed:** No end-to-end harness or user journeys.
-- **Tests executed/results:** None.
-- **Pending work:** Exercise deterministic seeding → rule detection → alert/case review → disposition → metrics across all tiers.
-- **Known issues:** End-to-end workflow does not exist.
-- **Next action:** Plan and implement after integration.
+- Demo rule values are not calibrated.
+- Synthetic analyst identity is unauthenticated.
+- Concurrent grouping requests are not fully serialized.
+- The schema does not enforce one active case association per alert.
 
-## Phase 12 — Documentation and Final Project Handoff
+**Pending work:**
 
-- **Status:** In Progress (current-state handover created and being corrected; final project documentation cannot be complete before the application phases).
-- **Files created:** `docs/01_problem_analysis.md`, `docs/02_system_architecture.md`, plus `docs/project_handover/README.md`, `PROJECT_CONTEXT.md`, `PROJECT_PROGRESS.md`, `ARCHITECTURE_REFERENCE.md`, `TECHNICAL_DECISIONS.md`, `SETUP_AND_EXECUTION.md`, `KNOWN_ISSUES_AND_PENDING_WORK.md`, and `AI_CONTINUATION_PROMPT.md`.
-- **Files modified:** Root `README.md` was updated with current paths/status/setup/documentation index. In this follow-up, `PROJECT_PROGRESS.md`, `TECHNICAL_DECISIONS.md`, `KNOWN_ISSUES_AND_PENDING_WORK.md`, and `AI_CONTINUATION_PROMPT.md` are updated to match Git/source/test evidence. These documentation changes are uncommitted; no commit or push was made.
-- **Implementation completed:** Current-state handover and setup/build/test evidence captured.
-- **Tests executed/results:** Documentation was checked against the sole reachable commit, source tree, manifests, and current worktree. Latest application verification: `pip check` and backend imports passed; FastAPI `/docs` and `/openapi.json` returned 200, `/` returned 404; pytest found no tests and exited 5; frontend lint and build passed; `git diff --check` and relative Markdown-link checks passed. These checks do not constitute a final product release.
-- **Pending work:** Update status and docs as every later phase completes; produce final operational/demo and evaluation documentation after Phase 11.
-- **Known issues:** Current product is still scaffold-only.
-- **Next action:** Continue Phase 4 and update the tracker with exact files, commands, results, and remaining work after that phase; do not mark later implementation phases complete based on documentation alone.
+- PostgreSQL verification.
+- Authentication.
+- Production deployment.
+
+---
+
+## Phase 7 — Backend Testing and Hardening
+
+**Status:** Completed.
+
+**Implementation completed:**
+
+- Dependency override fixture isolation.
+- Hermetic ground-truth API evaluation test.
+- Timestamp validation tests.
+- Mixed timezone-awareness defect fix.
+- Invalid enum and filter tests.
+- Pagination boundary tests.
+- Sorting and deterministic tie-breaking tests.
+- Missing-reference tests.
+- Standard API error contract tests.
+
+The transaction-list route validates timezone awareness before comparing date ranges, preventing mixed naive/aware timestamp inputs from causing an unintended HTTP 500.
+
+**Tests and verification:**
+
+- Full pytest suite: 65 passed.
+- Alembic check: passed.
+- Python compile checks: passed.
+- Dependency check: passed.
+- Diff check: passed.
+
+One existing Starlette/TestClient deprecation warning remains.
+
+**Known issues:**
+
+- Concurrent case grouping is not fully serialized.
+- The database does not guarantee one active-case association per alert.
+
+**Outcome:** No further Phase 7 work is required for the current demo scope.
+
+---
+
+## Phase 8 — Frontend Implementation and Integration
+
+**Status:** Completed for the local demo scope.
+
+**Frontend technology:**
+
+- React.
+- Vite.
+- JavaScript.
+- Centralized API client.
+- Vite development proxy.
+
+**Implemented screens:**
+
+1. Dashboard.
+2. Transactions.
+3. Alerts.
+4. Cases.
+
+**Implementation completed:**
+
+- Dashboard metrics.
+- Transaction listing and detail retrieval.
+- Risk evaluation interaction.
+- Alert listing and details.
+- Case listing and details.
+- Linked alert display.
+- Analyst disposition and action history.
+- Audit information display.
+- Centralized backend API communication.
+
+**API integration verified:**
+
+- `GET /api/dashboard/summary`
+- `GET /api/transactions`
+- `GET /api/transactions/{transaction_id}`
+- `POST /api/risk/evaluate`
+- `GET /api/alerts`
+- `GET /api/alerts/{alert_id}`
+- `GET /api/cases`
+- `GET /api/cases/{case_id}`
+- `POST /api/cases/group`
+- `POST /api/cases/{case_id}/actions`
+
+**Frontend integration verification:**
+
+- FastAPI health endpoint returned HTTP 200 on port 8000.
+- Vite proxy successfully reached the backend.
+- Dashboard metrics loaded successfully.
+- Transactions endpoint returned HTTP 200 and displayed 25 rows.
+- Alerts endpoint returned HTTP 200 and displayed 11 rows.
+- Cases endpoint returned HTTP 200 and displayed 1 case.
+- No persistent loading or error states were detected.
+- Frontend production build had previously succeeded.
+- Backend tests remained at 65 passing tests.
+
+**Known limitations:**
+
+- No complete browser-driven end-to-end workflow that writes to the development database was performed.
+- Account-link analysis and separate evaluation metrics do not have dedicated frontend screens.
+- Transaction text search is limited to the currently loaded page.
+- Some case actions are not exposed in the frontend.
+- Four existing Oxlint React state-in-effect warnings remain.
+- Full frontend behavior testing is still a follow-up opportunity.
+
+**Outcome:** Frontend and backend integration is verified for the current local demo scope.
+
+---
+
+## Phase 9 — Performance Benchmark
+
+**Status:** Completed with limited risk-evaluation scope.
+
+**Methodology:**
+
+- Generated a deterministic 100,000-transaction dataset.
+- Used isolated temporary SQLite storage.
+- Created a temporary ground-truth JSONL file.
+- Measured generation and evaluation using a monotonic timer.
+- Sampled Windows process working set.
+- Recorded database size.
+- Verified row counts and SQLite foreign-key integrity.
+
+**Benchmark results:**
+
+| Metric                           |                       Result |
+| -------------------------------- | ---------------------------: |
+| Transactions generated           |                      100,000 |
+| Generation time                  |               60.222 seconds |
+| Transactions evaluated           |                        1,000 |
+| Evaluation time                  |               33.874 seconds |
+| Evaluation throughput            |    29.52 transactions/second |
+| Alerts created during evaluation |                        1,142 |
+| Customers                        |                        5,000 |
+| Accounts                         |                        7,000 |
+| Final alert count                |                        2,142 |
+| Database size                    |             58,335,232 bytes |
+| Sampled peak working set         | 697,450,496 bytes (~665 MiB) |
+| Temporary truth file             |             35,181,667 bytes |
+| Foreign-key violations           |                            0 |
+
+**Important limitations:**
+
+- The remaining 99,000 transactions were not risk-evaluated.
+- The measured 1,000-transaction evaluation rate must not be extrapolated to the complete dataset.
+- Memory represents sampled process working set, not isolated allocation measurement.
+- Temporary benchmark files were disposed.
+- The development database and checked-in ground truth were not modified.
+
+**Recommended future work:**
+
+Profile and optimize risk evaluation before claiming full-dataset throughput.
+
+---
+
+## Phase 10 — Documentation and Final Handoff
+
+**Status:** Completed for the six requested documents.
+
+**Files updated:**
+
+- Root `README.md`
+- `frontend/README.md`
+- `PROJECT_PROGRESS.md`
+- `TECHNICAL_DECISIONS.md`
+- `KNOWN_ISSUES_AND_PENDING_WORK.md`
+- `AI_CONTINUATION_PROMPT.md`
+
+**Documentation completed:**
+
+- Actual architecture and technology stack.
+- Frontend screens and API integration.
+- Backend implementation.
+- Database and risk-engine design.
+- Installation and startup commands.
+- Test and build evidence.
+- Benchmark methodology and measurements.
+- Known limitations.
+- Follow-up work.
+- Project handover information.
+
+Planned and unverified capabilities are distinguished from implemented and tested behavior.
+
+---
+
+## Remaining Follow-up Work
+
+The following items are improvements beyond the verified local demo scope:
+
+1. Add a frontend behavior and E2E test harness.
+2. Test frontend loading, error, and empty states, filters, and analyst actions.
+3. Resolve the four existing Oxlint state-in-effect warnings.
+4. Implement authentication and authorization before external exposure.
+5. Establish transport, deployment, and secret-management controls.
+6. Profile risk evaluation and test larger batches before making full 100,000-transaction throughput claims.
+7. Verify PostgreSQL compatibility if it becomes a deployment target.
+
+---
+
+## Final Project Status
+
+**RiskTrace AI is implemented and verified for its local hackathon demo scope.**
+
+The backend, database, risk engine, alerts, case management, analyst workflow, and React frontend are implemented. The frontend-to-backend integration has been verified using real API data.
+
+The 100,000-transaction dataset generation benchmark is complete, while full-dataset risk evaluation remains unverified.
+
+Authentication, production deployment, PostgreSQL validation, and comprehensive end-to-end testing remain future improvements.
+
+**No production-readiness claim is made.**

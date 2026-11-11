@@ -5,6 +5,15 @@
 
 Read this package before continuing work. It records the current verified implementation separately from the requested future design.
 
+## Phase documents
+
+- [Phase 1: Problem Analysis](../01_problem_analysis.md)
+- [Phase 2: System Architecture](../02_system_architecture.md)
+- [Phase 3: Project Setup](../03_project_setup.md)
+- [Phase 4: Database Design and Data Dictionary](../04_database_design.md)
+- [Phase 5: Database Implementation and Seed Data](../05_database_implementation.md)
+- [Phase 6: Backend Development](../06_backend_development.md)
+
 ## Reading order
 
 1. [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) — objectives, requirements, data and domain vocabulary.
@@ -15,4 +24,4 @@ Read this package before continuing work. It records the current verified implem
 6. [KNOWN_ISSUES_AND_PENDING_WORK.md](KNOWN_ISSUES_AND_PENDING_WORK.md) — outstanding work and immediate next task.
 7. [AI_CONTINUATION_PROMPT.md](AI_CONTINUATION_PROMPT.md) — reusable instructions for the next assistant.
 
-The original [Phase 3 setup notes](../03_project_setup.md) remain available. These handover documents are a status snapshot, not evidence that planned application features have been implemented.
+The original [Phase 3 setup notes](../03_project_setup.md) remain available. These handover documents are a status snapshot; verify source and tests before assuming later-phase features are implemented.

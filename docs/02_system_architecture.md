@@ -1,7 +1,7 @@
 # Phase 2: System Architecture
 
 **Project:** RiskTrace AI  
-**Status:** Architecture baseline documented from the hackathon requirements. Diagrams and API contracts below are proposed design contracts for review, not implemented application functionality.
+**Status:** Original Phase 2 architecture proposal. The Phase 4 schema and approved defaults are authoritative in [docs/04_database_design.md](04_database_design.md), and the Phase 5 persistence implementation is documented in [docs/05_database_implementation.md](05_database_implementation.md). Business APIs, risk evaluation, and frontend integration remain proposed.
 
 ## 1. Architecture goals
 
@@ -18,7 +18,7 @@
 |---|---|---|---|
 | Presentation | Analyst alert/case review, evidence, filters, and dispositions | React, Vite, JavaScript, CSS | Generic Vite/React starter screen only; no product UI or API client |
 | Application/API | Validation, use cases, rules, case grouping, audit, evaluation orchestration | Python, FastAPI, Pydantic, SQLAlchemy 2.x | Minimal `FastAPI(title="RiskTrace AI")`; framework docs routes only |
-| Relational data | Operational entities, constraints, indexes, action/audit history | SQLite for hackathon; PostgreSQL compatibility considered | No engine, session, models, migrations, schema, or database file |
+| Relational data | Operational entities, constraints, indexes, action/audit history | SQLite for hackathon; PostgreSQL compatibility considered | Phase 5 SQLAlchemy models, SQLite engine/session, Alembic migration, generator, and validator; no domain API integration |
 
 The frontend and backend currently run independently. There is no browser-to-API or API-to-database integration.
 
@@ -55,9 +55,9 @@ flowchart LR
 
 Ground truth is reachable only by the evaluation path. The detector and operational query path must not read labels, label-derived features, or scenario identifiers that reveal labels.
 
-## 4. Proposed ER design (conceptual; Phase 4 must refine)
+## 4. ER design (original proposal, refined in Phase 4)
 
-This diagram expresses requested entities and likely relationships. It is not a finalized schema: fields, cardinalities, nullable behavior, uniqueness, keys, delete rules, and temporal semantics require the Phase 4 data dictionary.
+The original conceptual design has been refined into the approved 16-entity Phase 4 schema and implemented in Phase 5. The diagram below reflects that design; field-level constraints and deletion rules in `docs/04_database_design.md` are authoritative.
 
 ```mermaid
 erDiagram
@@ -65,32 +65,48 @@ erDiagram
     ACCOUNT ||--o{ CUSTOMER_ACCOUNT : ownership
     CUSTOMER ||--o{ CUSTOMER_DEVICE : uses
     DEVICE ||--o{ CUSTOMER_DEVICE : association
-    CUSTOMER ||--o{ KYC_PROFILE : has_profile
+    CUSTOMER ||--o{ KYC_PROFILE : has_versions
     ACCOUNT ||--o{ TRANSACTION : records
     MERCHANT o|--o{ TRANSACTION : counterparty
     DEVICE o|--o{ TRANSACTION : observed_on
-    TRANSACTION ||--o| TRANSFER_LINK : sender_leg
-    TRANSACTION ||--o| TRANSFER_LINK : receiver_leg
-    RISK_RULE ||--o{ ALERT : triggers
-    TRANSACTION ||--o{ ALERT : source_evidence
+    ACCOUNT ||--o{ TRANSFER_LINK : source_account
+    ACCOUNT ||--o{ TRANSFER_LINK : destination_account
+    TRANSACTION ||--o| TRANSFER_LINK : source_leg
+    TRANSACTION ||--o| TRANSFER_LINK : destination_leg
+    TRANSACTION o|--o| TRANSACTION : reversal_of
+    RISK_RULE ||--o{ ALERT : evaluates
+    TRANSACTION ||--o{ ALERT : triggers
     CASE ||--o{ CASE_ALERT : groups
     ALERT ||--o{ CASE_ALERT : associated
-    CASE ||--o{ ANALYST_ACTION : has_history
+    CASE ||--o{ ANALYST_ACTION : action_history
     ALERT o|--o{ ANALYST_ACTION : action_context
-    EXCEPTION_RECORD o|--o{ AUDIT_EVENT : may_reference
+    EXCEPTION_RECORD {
+        string exception_id PK
+        string scenario_code
+        string subject_type
+        string subject_id "informational; no FK"
+    }
+    AUDIT_EVENT {
+        string audit_event_id PK
+        string entity_type
+        string entity_id "informational; no FK"
+        string event_type
+    }
 ```
+
+`ExceptionRecord` and `AuditEvent` have independent informational polymorphic identifiers and no ER relationship/FK between them. The diagram includes all 16 entities; a transaction reversal is optional one-to-one.
 
 ### Relationship intent
 
 - Customer and Account use `CustomerAccount` to represent ownership; joint ownership remains possible.
 - Customer and Device use `CustomerDevice` to represent observed association and potential first/last-seen context.
 - Account owns transaction activity. Merchant and Device are optional transaction references depending on transaction type.
-- `TransferLink` references sender and receiver transaction legs and carries reconciliation state/evidence. Currency, fee, partial-transfer, and reversal semantics are TBD.
+- `TransferLink` references source/destination accounts and transaction legs; Phase 4 approves same-currency equal debit/credit legs, with no fees, partial transfers, or FX.
 - Each Alert references the exact rule version used and source transaction/evidence. A historical rule definition or immutable snapshot is needed to reproduce the decision.
-- Case and Alert associate through `CaseAlert`, allowing multiple alerts per case. Whether an alert may be reassigned or belong to multiple cases is TBD.
-- AnalystAction records time-ordered review/disposition history; its relationship to Case and optional Alert must be resolved.
-- `ExceptionRecord` stores a deliberately invalid/rejected scenario and reason outside valid operational records. `AuditEvent` captures material changes; exact entity linkage/retention is TBD.
-- KYCProfile cardinality/versioning, and required/optional customer links, must be finalized during Phase 4.
+- Case and Alert associate through `CaseAlert`; links preserve association history.
+- AnalystAction records append-only time-ordered review/disposition history for a required Case and optional Alert context.
+- `ExceptionRecord` stores deliberately invalid/rejected scenarios outside valid operational records. `AuditEvent` captures changes using informational `(entity_type, entity_id)` fields, not polymorphic FKs.
+- KYCProfile stores versioned customer records; UTC timestamps, USD-only money, ownership effective dates, and deletion policy are finalized in Phase 4.
 
 ## 5. API contract baseline (proposed, not implemented)
 
@@ -99,7 +115,7 @@ erDiagram
 - Base path proposal: `/api/v1`.
 - JSON request/response bodies with Pydantic validation.
 - Stable public IDs follow the agreed ID grammar; do not assume the ambiguous example `ACC--01` is final.
-- Timestamps should be serialized as ISO 8601 with an explicit UTC offset; exact storage/timezone policy is Phase 4.
+- Timestamps should be serialized as ISO 8601 with an explicit UTC offset; the SQLAlchemy UTC type normalizes storage/application round trips.
 - Monetary values must use a documented decimal/string representation and currency; do not use binary floating-point for money.
 - List responses should use documented pagination (initial proposal: `limit` and opaque `cursor`) and stable ordering. Cursor format and maximum page size are TBD.
 - Standard errors should include a stable machine-readable `code`, human-readable `message`, optional field `details`, and request/correlation ID. Avoid exposing stack traces or sensitive fields.
@@ -190,7 +206,7 @@ flowchart TD
     Truth --> Metrics
 ```
 
-Initial rules: transaction velocity spike, high-value transaction, new-device activity, dormant-account reactivation, and circular transfers. Thresholds, lookback windows, contribution weights, score scale, aggregation/caps, priority bands, tie-breaking, rule lifecycle, and metric definitions are open decisions. Detection must be deterministic and explainable; ground truth must not be used to calculate detection features or determine alerts.
+Initial rules: transaction velocity spike, high-value transaction, new-device activity, dormant-account reactivation, and circular transfers. The approved demo policy uses a 0–10,000 bps scale, sums/caps contributions per transaction, and assigns P1/P2/P3/P4 at >=7,500 / >=5,000 / >=2,500 / below 2,500. Phase 5 seed configuration contains fixed per-rule contributions, but no detector, rule evaluation, or metrics implementation exists. Detection must be deterministic and explainable; ground truth must not be used to calculate detection features or determine alerts.
 
 ## 8. Exception and invalid-scenario workflow
 
@@ -217,7 +233,7 @@ Required exception cases:
 4. Alert has no triggering transaction.
 5. Case disposition precedes its alert.
 
-For each, retain the input/scenario identifier, validation rule, reason, and reject/quarantine outcome. Keep invalid rows out of operational tables unless there is an explicitly designed safe representation. Preserve strict foreign-key and chronology constraints for valid records. Phase 4/5 must decide whether to use `ExceptionRecord`, rejected-row exports, or isolated test fixtures, and ensure invalid test fixtures do not compromise live/demo data.
+For each, retain the input/scenario identifier, validation rule, reason, and reject/quarantine outcome. The Phase 5 seed stores all five scenarios as quarantined `ExceptionRecord` payloads and keeps invalid rows out of operational tables. Preserve strict foreign-key and chronology constraints for valid records.
 
 ## 9. Cross-cutting requirements
 
@@ -226,19 +242,19 @@ For each, retain the input/scenario identifier, validation rule, reason, and rej
 - **Reliability:** explicit validation and errors; avoid success-shaped fallbacks.
 - **Performance:** measure generation, indexing, alert queries, and case loading on the 100,000-transaction baseline before claiming capacity.
 - **Portability:** SQLite is the hackathon database; PostgreSQL compatibility is a future consideration and should be tested if treated as a delivery requirement.
-- **Testing:** pytest/HTTPX API and data-integrity tests, frontend build verification, and later end-to-end coverage. No business or API tests currently exist.
+- **Testing:** pytest/HTTPX API and data-integrity tests, frontend build verification, and later end-to-end coverage. Phase 6 adds isolated backend tests; dedicated expanded backend hardening and end-to-end coverage remain pending.
 
 ## 10. Current versus proposed status
 
 | Capability | Current evidence | Proposed target |
 |---|---|---|
 | Frontend | Vite/React starter counter/tutorial | Analyst alert and case workflow |
-| API | FastAPI docs/OpenAPI framework routes; no business routes | Versioned health, alert, case, action, rule, and metrics contracts |
-| Database | None | Relational SQLite schema via SQLAlchemy |
-| Data generation | None | Deterministic generator and validation |
-| Risk rules | None | Versioned explainable rules and evidence |
-| Cases/actions/audit | None | Grouped case workflow and append-oriented history |
-| Exceptions | None | Isolated invalid scenarios with validation outcomes |
-| Evaluation | None | Separate ground-truth evaluation/reporting path |
+| API | FastAPI transaction, alert, case/action, risk evaluation, account-link, dashboard, and evaluation routes under `/api`; `/docs` and health route | Frontend integration, authentication, deployment hardening, and any additional contract changes |
+| Database | Phase 5 SQLite schema plus additive Phase 6 migration `a61c9f3d10b2`; development DB retains its seeded rows | PostgreSQL portability validation and full target-size benchmark |
+| Data generation | Small deterministic 50/70/500 seed baseline, validation, separate truth JSONL | Full target-size generation and benchmark; preserve detector/evaluator separation |
+| Risk rules | Six versioned rule keys, deterministic evaluation, evidence snapshots, score cap, priority assignment | Calibrate/validate demo rule parameters against representative data |
+| Cases/actions/audit | Case grouping, lifecycle validation, analyst action endpoint, append-only action and audit history | Authenticated analyst identities and integrated product workflows |
+| Exceptions | Five quarantined seed ExceptionRecords | API-level exception reporting and operational error handling |
+| Evaluation | Separate transaction-level ground-truth JSONL and isolated precision/recall/F1/FPR/top-100 evaluation endpoint | Larger-scale evaluation and validated scoring methodology |
 
-Proceed to Phase 4 only after reviewing this proposed architecture and producing an approved data dictionary. Do not treat this document as implemented code or as a substitute for the Phase 4 schema.
+Phase 4 design and Phase 5 database implementation are complete for the small baseline. Phase 6 backend functionality is implemented and tested within the documented local-demo scope. The React starter remains independent and is not connected to these APIs; do not infer frontend or production readiness from backend completion.

@@ -60,9 +60,18 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 
 `.env` is ignored by Git. **The current application does not load `.env` or consume these settings.** Do not add secrets to the example file.
 
-## Database initialization
+## Database initialization and seed data
 
-There is no database initialization command yet: no SQLAlchemy engine/session, models, migrations, seed-data generator, or database file exists. Do not expect `risktrace.db` to be created by startup.
+From `backend/` with the virtual environment active:
+
+```powershell
+python -m alembic upgrade head
+python -m app.services.seed_data
+```
+
+The migration creates the 16-entity SQLite schema; the seed command creates the default 50-customer / 70-account / 500-transaction demo dataset and writes separate transaction-level truth to `ground_truth/generated/truth_2026.jsonl`. By default the local database is `backend/risktrace.db` (Git-ignored). Pass `--database-url` and `--ground-truth` to override paths. `.env` is not automatically loaded; set `DATABASE_URL` in the shell or use explicit CLI arguments.
+
+The generator refuses to seed a non-empty database. `--reset` is an explicit local SQLite operation and refuses to remove analyst/audit history. Do not use it as an automatic startup or production reset mechanism.
 
 ## Start the backend
 
@@ -77,7 +86,10 @@ Expected framework URLs:
 - <http://127.0.0.1:8000/docs> — Swagger UI (verified HTTP 200)
 - <http://127.0.0.1:8000/redoc> — ReDoc
 - <http://127.0.0.1:8000/openapi.json> — generated framework schema (verified HTTP 200)
-- `GET /` currently returns 404; no root or health endpoint exists.
+- <http://127.0.0.1:8000/health> — basic health endpoint
+- `GET /` is not implemented.
+
+The Phase 6 API routes include transaction, account-link, alert, risk-evaluation, case/action, dashboard, and evaluation endpoints; see [Phase 6 backend development](../06_backend_development.md) for exact methods and paths. The frontend is not connected to these routes.
 
 ## Start the frontend
 
@@ -94,11 +106,13 @@ Vite normally prints <http://localhost:5173>. If occupied, Vite may select anoth
 From `backend/`:
 
 ```powershell
+python -m alembic upgrade head
+python -m alembic current
 python -m pip check
 python -m pytest -q
 ```
 
-At the snapshot, `pip check` passed. Pytest reported “no tests ran” and returned exit code 5 because `backend/tests/` has no test modules; this is **not** a passing test suite.
+Only seed a **new empty database** with `python -m app.services.seed_data`; the generator intentionally refuses to overwrite a populated database. Verified Phase 6 results: Alembic reports `a61c9f3d10b2 (head)`, `pip check` reported no broken requirements, and `pytest -q` passed 19 tests with one Starlette HTTPX/TestClient deprecation warning. The migration preserved the existing 500-transaction database. The 100,000-transaction dataset has not been generated or benchmarked.
 
 From `frontend/`:
 
@@ -115,7 +129,7 @@ Backend import/version check:
 python -c "import fastapi, uvicorn, sqlalchemy, pydantic, pytest, httpx; print('imports ok')"
 ```
 
-A manual FastAPI `TestClient` smoke check returned 200 for `/docs` and `/openapi.json`; `/` returned 404. It emitted a Starlette deprecation warning recommending `httpx2` instead of HTTPX for `TestClient`. No automated API integration tests are present.
+A FastAPI `TestClient` smoke check and automated tests exercise the implemented API routes. The suite emitted a Starlette deprecation warning recommending `httpx2` instead of HTTPX for `TestClient`; dependency migration remains for Phase 7. Root `/` is not implemented.
 
 ## Troubleshooting
 
@@ -124,6 +138,6 @@ A manual FastAPI `TestClient` smoke check returned 200 for `/docs` and `/openapi
 - **Backend import fails from repository root:** switch to `backend/` before running `uvicorn app.main:app`.
 - **PowerShell activation is blocked:** invoke `backend\venv\Scripts\python.exe` directly or follow local policy to enable activation.
 - **Port occupied:** choose an available port and update the browser URL. No app configuration currently reads `API_PORT`.
-- **No database created:** expected until database implementation phase.
-- **Pytest exit 5:** currently expected when no test files are collected; add tests before treating pytest as a passing verification.
-- **Root endpoint 404:** expected until a product/root/health endpoint is implemented.
+- **Database migration fails:** run the Alembic command from `backend/` with the project virtual environment active; set `DATABASE_URL` or pass `--database-url` if using a non-default location.
+- **Seed refuses to run:** it does not overwrite a non-empty database. Use a new empty database, or review the explicit local `--reset` guard; it will refuse to erase analyst/audit history.
+- **Root endpoint unavailable:** `/` is not implemented; use `/health` or `/docs`.
