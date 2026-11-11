@@ -1,53 +1,81 @@
 # RiskTrace AI
 
-RiskTrace AI is a transaction risk monitoring and analyst case-management application. It is being developed in phases; this phase establishes the project structure and development environments only.
+RiskTrace AI is a hackathon project for explainable transaction-risk monitoring and analyst case management. Its goal is to prioritize synthetic banking transactions and linked accounts for analyst review using deterministic, transparent risk indicators.
 
-## Technology stack
+> **Implementation status:** The repository currently contains the Phase 3 project scaffold and the unmodified React/Vite starter screen. The risk-monitoring product capabilities below are requirements, not implemented features.
 
-- **Frontend:** React with Vite and JavaScript
-- **Backend:** Python with FastAPI
-- **Database:** SQLite with SQLAlchemy 2.x (database models are not part of this setup phase)
+## Planned capabilities
 
-## Project layout
+- Generate deterministic synthetic banking data while preserving relational integrity.
+- Detect suspicious transaction patterns and explain risk scores through versioned rules and evidence.
+- Prioritize alerts and group related alerts into analyst cases.
+- Record analyst decisions and an audit history.
+- Keep evaluation ground truth separate from detection inputs and report measurable metrics.
+
+## Architecture and technology
+
+| Tier | Planned technology | Current implementation |
+|---|---|---|
+| Frontend | React, Vite, JavaScript, CSS | Vite/React starter app; no product UI or API integration |
+| Backend | Python, FastAPI, SQLAlchemy 2.x, Pydantic | FastAPI application shell; no domain routes or persistence |
+| Database | SQLite; PostgreSQL compatibility considered for the future | No database file, schema, or database connection |
+
+The intended data flow is frontend → FastAPI → relational database. At present, only the standalone starter frontend and FastAPI framework documentation endpoints exist; the tiers are not integrated.
+
+## Repository layout
 
 ```text
-backend/       FastAPI application, tests, and Python dependencies
-docs/          Project and phase documentation
-frontend/      Independent React + Vite application
+backend/       FastAPI application shell, dependency manifest, and test location
+docs/          Phase documentation and project handover package
+frontend/      Independent React + Vite JavaScript application
 exports/       Reserved for generated exports
-ground_truth/  Reserved for evaluation ground truth
+ground_truth/  Reserved for evaluation labels kept separate from detection data
 ```
 
-## Setup
+## Setup (Windows PowerShell)
 
 ### Backend
 
-From `risktrace-ai/backend` in PowerShell:
+From the repository root:
 
 ```powershell
+Set-Location .\backend
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-The FastAPI application is available at <http://127.0.0.1:8000>; interactive API documentation is at <http://127.0.0.1:8000/docs>.
+The framework documentation is at <http://127.0.0.1:8000/docs>. No application-specific API routes are implemented yet.
 
 ### Frontend
 
-From `risktrace-ai/frontend`:
+In a second terminal from the repository root:
 
 ```powershell
+Set-Location .\frontend
 npm install
 npm run dev
 ```
 
-Vite prints the local development URL after startup.
+Vite prints its local URL (normally <http://localhost:5173>).
 
 ### Environment configuration
 
-Copy `.env.example` to `.env` and adjust local settings as needed. `.env` is ignored by Git; do not commit secrets. Environment loading is not wired into the application in this setup phase.
+Copy `.env.example` to `.env` for local settings. `.env` is ignored by Git. Automatic environment loading and use of these settings are not implemented yet.
 
-## Phase status
+## Documentation
 
-See [docs/03_project_setup.md](docs/03_project_setup.md) for the phase objective, detailed setup, and verification results.
+- [Phase 1: Problem Analysis](docs/01_problem_analysis.md)
+- [Phase 2: System Architecture](docs/02_system_architecture.md)
+- [Phase 3: Project Setup](docs/03_project_setup.md)
+- [Project handover package](docs/project_handover/README.md)
+- [Project context](docs/project_handover/PROJECT_CONTEXT.md)
+- [Project progress](docs/project_handover/PROJECT_PROGRESS.md)
+- [Architecture reference](docs/project_handover/ARCHITECTURE_REFERENCE.md)
+- [Technical decisions](docs/project_handover/TECHNICAL_DECISIONS.md)
+- [Setup and execution](docs/project_handover/SETUP_AND_EXECUTION.md)
+- [Known issues and pending work](docs/project_handover/KNOWN_ISSUES_AND_PENDING_WORK.md)
+- [AI continuation prompt](docs/project_handover/AI_CONTINUATION_PROMPT.md)
+
+See the handover package for implementation evidence, phase status, and the precise next task.
