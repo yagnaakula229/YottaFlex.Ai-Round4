@@ -2,6 +2,11 @@
 
 RiskTrace AI is a hackathon application for explainable transaction-risk monitoring and analyst case management. It uses deterministic, versioned rules to identify transaction patterns, prioritize alerts, group related alerts into cases, and preserve analyst decisions. Ground-truth labels are kept separate from operational risk evaluation.
 
+
+<img width="6148" height="9045" alt="diagram (1)" src="https://github.com/user-attachments/assets/a3d460ad-877d-4699-a6d9-89870306dcf6" />
+
+
+
 ## Current implementation
 
 | Tier | Technology | Status |
