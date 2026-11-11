@@ -3,6 +3,8 @@
 **Snapshot:** 2026-11-11. This reference distinguishes implemented Phase 5/6 behavior from future frontend and deployment work.
 
 ## Current implemented architecture
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/6979b3b0-7409-48b9-94da-a3a2fa0864d8" />
+
 
 ```mermaid
 flowchart LR
